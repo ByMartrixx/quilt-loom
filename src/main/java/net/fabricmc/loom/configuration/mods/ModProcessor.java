@@ -100,7 +100,7 @@ public class ModProcessor {
 		boolean isQuiltMod = ModUtils.isQuiltMod(file);
 
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry(isQuiltMod ? "quilt.mod.json" : "1fabric.mod.json", new StringZipEntryTransformer() {
+		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry(isQuiltMod ? "quilt.mod.json" : "fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) {
 				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
