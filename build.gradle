@@ -42,6 +42,7 @@ repositories {
 		url = 'https://maven.fabricmc.net'
 	}
 	mavenCentral()
+	mavenLocal()
 }
 
 configurations {
@@ -77,7 +78,8 @@ dependencies {
 	implementation ('org.ow2.asm:asm-util:9.2')
 
 	// game handling utils
-	implementation ('org.quiltmc:stitch:0.6.1') {
+	// TODO: remove local suffix
+	implementation ('org.quiltmc:stitch:0.6.2+local') {
 		exclude module: 'enigma'
 	}
 

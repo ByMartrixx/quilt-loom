@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.google.gson.JsonObject;
@@ -108,6 +109,7 @@ public class MappingsProviderImpl extends AbstractMappingsProviderImpl {
 
 		mappedProvider.initFiles(minecraftProvider, this);
 		mappedProvider.provide(dependency, postPopulationScheduler);
+		System.out.println(this);
 	}
 
 	@Override
@@ -169,6 +171,7 @@ public class MappingsProviderImpl extends AbstractMappingsProviderImpl {
 
 	@Override
 	protected void mergeAndSaveMappings(Project project, Path unmergedMappingsJar) throws IOException {
+		IntermediateMappingsProviderImpl intermediateMappingsProvider = getDependencyManager().getProvider(IntermediateMappingsProviderImpl.class);
 		Path unmergedMappings = Paths.get(mappingsStepsDir.toString(), Constants.Mappings.UNMERGED_MAPPINGS_FILE);
 		project.getLogger().info(":extracting " + unmergedMappingsJar.getFileName());
 
@@ -177,7 +180,11 @@ public class MappingsProviderImpl extends AbstractMappingsProviderImpl {
 		}
 
 		Path invertedHashed = Paths.get(mappingsStepsDir.toString(), Constants.Mappings.INVERTED_HASHED_FILE);
-		reorderMappings(getHashedTiny(), invertedHashed, Constants.Mappings.INTERMEDIATE_NAMESPACE, Constants.Mappings.SOURCE_NAMESPACE);
+		List<String> invertedHashedNamespaces = intermediateMappingsProvider.getNamespacesExcept(Constants.Mappings.INTERMEDIATE_NAMESPACE, Constants.Mappings.SOURCE_NAMESPACE);
+		invertedHashedNamespaces.add(0, Constants.Mappings.INTERMEDIATE_NAMESPACE);
+		invertedHashedNamespaces.add(1, Constants.Mappings.SOURCE_NAMESPACE);
+		reorderMappings(getHashedTiny(), invertedHashed, invertedHashedNamespaces.toArray(new String[0]));
+
 		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), Constants.Mappings.UNORDERED_MERGED_MAPPINGS_FILE);
 		project.getLogger().info(":merging");
 		mergeMappings(invertedHashed, unmergedMappings, unorderedMergedMappings);
@@ -196,7 +203,7 @@ public class MappingsProviderImpl extends AbstractMappingsProviderImpl {
 		return Constants.Configurations.MAPPINGS;
 	}
 
-	public Path getHashedTiny() throws IOException {
+	public Path getHashedTiny() {
 		IntermediateMappingsProviderImpl intermediateMappingsProvider = getDependencyManager().getProvider(IntermediateMappingsProviderImpl.class);
 		return intermediateMappingsProvider.getTinyMappings().toPath();
 	}
@@ -212,6 +219,22 @@ public class MappingsProviderImpl extends AbstractMappingsProviderImpl {
 	@Override
 	public boolean hasUnpickDefinitions() {
 		return hasUnpickDefinitions;
+	}
+
+	@Override
+	public String toString() {
+		return "MappingsProviderImpl{" +
+				"minecraftVersion='" + minecraftVersion + '\'' +
+				", mappingsName='" + mappingsName + '\'' +
+				", mappingsVersion='" + mappingsVersion + '\'' +
+				", baseTinyMappings=" + baseTinyMappings +
+				", tinyMappings=" + tinyMappings +
+				", tinyMappingsJar=" + tinyMappingsJar +
+				", mappedProvider=" + mappedProvider +
+				", unpickDefinitionsFile=" + unpickDefinitionsFile +
+				", hasUnpickDefinitions=" + hasUnpickDefinitions +
+				", unpickMetadata=" + unpickMetadata +
+				'}';
 	}
 
 	public record UnpickMetadata(String unpickGroup, String unpickVersion) {

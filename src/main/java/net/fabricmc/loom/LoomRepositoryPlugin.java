@@ -78,6 +78,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			repo.setUrl("https://libraries.minecraft.net/");
 		});
 		repositories.mavenCentral();
+		repositories.mavenLocal();
 
 		// MinecraftMappedProvider.java
 		repositories.ivy(repo -> {

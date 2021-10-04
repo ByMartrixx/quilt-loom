@@ -66,6 +66,10 @@ public abstract class DependencyProvider {
 
 	public abstract String getTargetConfig();
 
+	public boolean allowMultipleDependencies() {
+		return false;
+	}
+
 	public Dependency addDependency(Object object, String target) {
 		if (object instanceof File) {
 			object = project.files(object);

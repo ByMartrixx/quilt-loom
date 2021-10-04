@@ -40,18 +40,20 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.build.ModCompileRemapper;
 import net.fabricmc.loom.configuration.DependencyProvider.DependencyInfo;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.LoomRepositoryPlugin;
 
 public class LoomDependencyManager {
 	private static class ProviderList {
 		private final String key;
 		private final List<DependencyProvider> providers = new ArrayList<>();
+		private boolean allowMultipleDependencies = false;
 
 		ProviderList(String key) {
 			this.key = key;
@@ -88,6 +90,8 @@ public class LoomDependencyManager {
 		List<Runnable> afterTasks = new ArrayList<>();
 
 		MappingsProviderImpl mappingsProvider = null;
+		IntermediateMappingsProviderImpl intermediateMappingsProvider = null;
+		ProviderList intermediateProviders = null;
 
 		project.getLogger().info(":setting up loom dependencies");
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -95,14 +99,20 @@ public class LoomDependencyManager {
 		List<ProviderList> targetProviders = new ArrayList<>();
 
 		for (DependencyProvider provider : dependencyProviderList) {
-			providerListMap.computeIfAbsent(provider.getTargetConfig(), (k) -> {
-				ProviderList list = new ProviderList(k);
-				targetProviders.add(list);
-				return list;
-			}).providers.add(provider);
+			ProviderList list = providerListMap.computeIfAbsent(provider.getTargetConfig(), (k) -> {
+				ProviderList list1 = new ProviderList(k);
+				targetProviders.add(list1);
+				return list1;
+			});
+			list.providers.add(provider);
+			list.allowMultipleDependencies = list.allowMultipleDependencies || provider.allowMultipleDependencies();
 
 			if (provider instanceof MappingsProviderImpl) {
 				mappingsProvider = (MappingsProviderImpl) provider;
+			}
+			if (provider instanceof IntermediateMappingsProviderImpl) {
+				intermediateMappingsProvider = (IntermediateMappingsProviderImpl) provider;
+				intermediateProviders = list;
 			}
 		}
 
@@ -110,32 +120,21 @@ public class LoomDependencyManager {
 			throw new RuntimeException("Could not find MappingsProvider instance!");
 		}
 
+		// Run the intermediateProviders first
+		if (intermediateMappingsProvider == null) {
+			throw new RuntimeException("Could not find IntermediateMappingsProvider instance!");
+		}
+		targetProviders.remove(intermediateProviders);
+
+		try {
+			provideToProviders(intermediateProviders, project, afterTasks);
+			intermediateMappingsProvider.endProcessing();
+		} catch (Exception e) {
+			throw new RuntimeException(String.format("Failed to provide dependencies for '%s'", intermediateMappingsProvider.getTargetConfig()), e);
+		}
+
 		for (ProviderList list : targetProviders) {
-			Configuration configuration = project.getConfigurations().getByName(list.key);
-			DependencySet dependencies = configuration.getDependencies();
-
-			if (dependencies.isEmpty()) {
-				throw new IllegalArgumentException(String.format("No '%s' dependency was specified!", list.key));
-			}
-
-			if (dependencies.size() > 1) {
-				throw new IllegalArgumentException(String.format("Only one '%s' dependency should be specified, but %d were!",
-												list.key,
-												dependencies.size())
-				);
-			}
-
-			for (Dependency dependency : dependencies) {
-				for (DependencyProvider provider : list.providers) {
-					DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
-
-					try {
-						provider.provide(info, afterTasks::add);
-					} catch (Exception e) {
-						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.toString(), e);
-					}
-				}
-			}
+			provideToProviders(list, project, afterTasks);
 		}
 
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
@@ -182,6 +181,36 @@ public class LoomDependencyManager {
 
 		for (Runnable runnable : afterTasks) {
 			runnable.run();
+		}
+	}
+
+	private void provideToProviders(ProviderList list, Project project, List<Runnable> afterTasks) {
+		Configuration configuration = project.getConfigurations().getByName(list.key);
+		DependencySet dependencies = configuration.getDependencies();
+
+		if (dependencies.isEmpty()) {
+			throw new IllegalArgumentException(String.format("No '%s' dependency was specified!", list.key));
+		}
+
+		if (!list.allowMultipleDependencies && dependencies.size() > 1) {
+			throw new IllegalArgumentException(String.format("Only one '%s' dependency should be specified, but %d were!",
+					list.key,
+					dependencies.size())
+			);
+		}
+
+		for (Dependency dependency : dependencies) {
+			for (DependencyProvider provider : list.providers) {
+				DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
+
+				try {
+					// TODO: Don't commit
+					System.out.println("Providing " + info.getDepString() + " to " + provider);
+					provider.provide(info, afterTasks::add);
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.toString(), e);
+				}
+			}
 		}
 	}
 

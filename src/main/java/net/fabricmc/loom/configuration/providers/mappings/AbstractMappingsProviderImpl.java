@@ -8,6 +8,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
@@ -117,34 +118,42 @@ public abstract class AbstractMappingsProviderImpl extends DependencyProvider im
 		}
 	}
 
-	protected boolean baseMappingsAreV2() throws IOException {
-		try (BufferedReader reader = Files.newBufferedReader(baseTinyMappings)) {
+	protected final boolean baseMappingsAreV2() throws IOException {
+		return areMappingsV2(baseTinyMappings);
+	}
+
+	protected final boolean doesJarContainV2Mappings(Path path) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
+			return areMappingsV2(getMappingsFilePath(fs));
+		}
+	}
+
+	protected final boolean areMappingsV2(Path path) throws IOException {
+		try (BufferedReader reader = Files.newBufferedReader(path)) {
 			TinyV2Factory.readMetadata(reader);
 			return true;
 		} catch (IllegalArgumentException e) {
-			// TODO: just check the mappings version when Parser supports V1 in readMetadata()
 			return false;
 		}
 	}
 
-	protected boolean doesJarContainV2Mappings(Path path) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
-			try (BufferedReader reader = Files.newBufferedReader(fs.getPath(Constants.Mappings.MAPPINGS_FILE_DIR, Constants.Mappings.MAPPINGS_FILE))) {
-				TinyV2Factory.readMetadata(reader);
-				return true;
-			} catch (IllegalArgumentException e) {
-				return false;
-			}
+	protected static Path getMappingsFilePath(FileSystem jar) {
+		Path path = jar.getPath(Constants.Mappings.MAPPINGS_FILE_PATH);
+		if (!Files.exists(path)) {
+			path = jar.getPath(Constants.Mappings.FABRIC_MAPPINGS_FILE_PATH);
 		}
+
+		return path;
 	}
 
 	public static void extractMappings(FileSystem jar, Path extractTo) throws IOException {
-		Files.copy(jar.getPath(Constants.Mappings.MAPPINGS_FILE_PATH), extractTo, StandardCopyOption.REPLACE_EXISTING);
+		Files.copy(getMappingsFilePath(jar), extractTo, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	protected abstract void mergeAndSaveMappings(Project project, Path unmergedMappingsJar) throws IOException;
 
 	protected void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {
+		System.out.println("Reordering " + oldMappings.toAbsolutePath() + " to " + Arrays.toString(newOrder) + " and saving to " + newMappings.toAbsolutePath());
 		Command command = new CommandReorderTinyV2();
 		String[] args = new String[2 + newOrder.length];
 		args[0] = oldMappings.toAbsolutePath().toString();
@@ -158,8 +167,7 @@ public abstract class AbstractMappingsProviderImpl extends DependencyProvider im
 			Command command = new CommandMergeTinyV2();
 			runCommand(command, hashedMappings.toAbsolutePath().toString(),
 					mappings.toAbsolutePath().toString(),
-					newMergedMappings.toAbsolutePath().toString(),
-					Constants.Mappings.INTERMEDIATE_NAMESPACE, Constants.Mappings.SOURCE_NAMESPACE);
+					newMergedMappings.toAbsolutePath().toString());
 		} catch (Exception e) {
 			throw new RuntimeException("Could not merge mappings from " + hashedMappings.toString()
 					+ " with mappings from " + mappings, e);
@@ -175,7 +183,7 @@ public abstract class AbstractMappingsProviderImpl extends DependencyProvider im
 	}
 
 	protected void initFiles() {
-		baseTinyMappings = mappingsDir.resolve(mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base.tiny");
+		baseTinyMappings = mappingsDir.resolve(mappingsName + "-" + mappingsVersion + "-" + minecraftVersion + "-base.tiny");
 	}
 
 	@Override

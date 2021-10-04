@@ -91,7 +91,8 @@ public class Constants {
 		 * Constants for versions of dependencies.
 		 */
 		public static final class Versions {
-			public static final String MIXIN_COMPILE_EXTENSIONS = "1.0.0";
+			// TODO: remove local suffix
+			public static final String MIXIN_COMPILE_EXTENSIONS = "1.0.2+local";
 			public static final String DEV_LAUNCH_INJECTOR = "1.0.1";
 			public static final String TERMINAL_CONSOLE_APPENDER = "1.2.0";
 			public static final String JETBRAINS_ANNOTATIONS = "19.0.0";
@@ -149,13 +150,15 @@ public class Constants {
 		// Files & dirs
 		public static final String MAPPINGS_FILE = "mappings.tiny";
 		public static final String MAPPINGS_FILE_DIR = "hashed";
+		public static final String FABRIC_MAPPINGS_FILE_DIR = "mappings";
 		public static final String MAPPINGS_FILE_PATH = MAPPINGS_FILE_DIR + "/" + MAPPINGS_FILE;
+		public static final String FABRIC_MAPPINGS_FILE_PATH = FABRIC_MAPPINGS_FILE_DIR + "/" + MAPPINGS_FILE;
 		public static final String UNMERGED_MAPPINGS_FILE = "unmerged-mappings.tiny";
 		public static final String MAPPINGS_CACHE_DIR = "mappings";
 		public static final String MAPPINGS_STEPS_CACHE_DIR = "steps";
 		public static final String INVERTED_HASHED_FILE = "inverted-hashed.tiny";
 		public static final String UNORDERED_MERGED_MAPPINGS_FILE = "unordered-merged.tiny";
-		public static final String UNORDERED_INTERMEDIATE_MAPPINGS_FILE = "unordered-intermediate-merged.tiny";
+		public static final String UNORDERED_INTERMEDIATE_MAPPINGS_FILE = "unordered-intermediate.tiny";
 		public static final String HASHED_TINY_FORMAT = "hashed-%s.tiny";
 		public static final String HASHED_JAR_FORMAT = "hashed-%s.jar";
 
