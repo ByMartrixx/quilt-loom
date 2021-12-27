@@ -151,7 +151,7 @@ public final class LoomTasks {
 				// Decompiler will be passed to the constructor of GenerateSourcesTask
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
 					task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
-					task.setGroup(Constants.TaskGroup.FABRIC);
+					task.setGroup(Constants.TaskGroup.QUILT);
 					task.getInputJar().set(inputJar);
 
 					if (mappingsProvider.hasUnpickDefinitions()) {
@@ -162,7 +162,7 @@ public final class LoomTasks {
 
 			tasks.register("genSources", task -> {
 				task.setDescription("Decompile minecraft using the default decompiler.");
-				task.setGroup(Constants.TaskGroup.FABRIC);
+				task.setGroup(Constants.TaskGroup.QUILT);
 
 				task.dependsOn(project.getTasks().getByName("genSourcesWithCfr"));
 			});

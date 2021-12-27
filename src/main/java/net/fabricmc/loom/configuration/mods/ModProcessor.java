@@ -56,7 +56,7 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class ModProcessor {
-	private static final String fromM = MappingsNamespace.INTERMEDIARY.toString();
+	private static final String fromM = MappingsNamespace.HASHED.toString();
 	private static final String toM = MappingsNamespace.NAMED.toString();
 
 	private final Project project;
