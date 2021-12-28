@@ -70,7 +70,7 @@ public class ModDependencyInfo {
 		try {
 			this.accessWidenerData = tryReadAccessWidenerData(getInputFile().toPath());
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read access widener data from" + inputFile, e);
+			throw new UncheckedIOException("Failed to read access widener data from " + inputFile, e);
 		}
 	}
 
