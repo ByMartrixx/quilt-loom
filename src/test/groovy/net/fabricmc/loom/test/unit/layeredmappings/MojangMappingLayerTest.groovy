@@ -34,7 +34,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
             mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
         when:
             def mappings = getLayeredMappings(
-                    new IntermediaryMappingsSpec(),
+                    new HashedMojmapMappingsSpec(),
                     buildMojangMappingsSpec(true)
             )
             def tiny = getTiny(mappings)
